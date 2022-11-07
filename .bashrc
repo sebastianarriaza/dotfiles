@@ -1,123 +1,149 @@
-# Enable the subsequent settings only in interactive sessions
-case $- in
-  *i*) ;;
-    *) return;;
-esac
+# History control
+HISTCONTROL=ignoredups:ignorespace
+HISTSIZE=100000
+HISTFILESIZE=2000000
+shopt -s histappend
 
-# Path to your oh-my-bash installation.
-export OSH=/c/Users/sebas/.oh-my-bash
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
+fi
 
-# Set name of the theme to load. Optionally, if you set this to "random"
-# it'll load a random theme each time that oh-my-bash is loaded.
-OSH_THEME="powerline"
+alias grep='grep --color=auto'
+alias gg='git grep -ni'
+alias phpunit='phpunit --colors'
+alias vimpress="VIMENV=talk vim"
+alias c="composer"
+alias v="vagrant"
+alias d="sudo docker"
+alias biggest="du -h --max-depth=1 | sort -h"
+alias tnn="cd ~/src/github.com/tomnomnom"
+alias :q="exit"
+alias norg="gron --ungron"
+alias ungron="gron --ungron"
+alias j="jobs"
+alias follow="tail -f -n +1"
+
+# COLOURS! YAAAY!
+export TERM=xterm-256color
+
+# Obviously.
+export EDITOR=/usr/bin/vim
+
+# Personal binaries
+export PATH=${PATH}:~/bin:~/.local/bin:~/etc/scripts
+
+# I'd quite like for Go to work please.
+export PATH=${PATH}:/usr/local/go/bin
+export GOPATH=~
 
 
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
+# Change up a variable number of directories
+# E.g:
+#   cu   -> cd ../
+#   cu 2 -> cd ../../
+#   cu 3 -> cd ../../../
+function cu {
+    local count=$1
+    if [ -z "${count}" ]; then
+        count=1
+    fi
+    local path=""
+    for i in $(seq 1 ${count}); do
+        path="${path}../"
+    done
+    cd $path
+}
 
-# Uncomment the following line to use hyphen-insensitive completion. Case
-# sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
 
-# Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
+# Open all modified files in vim tabs
+function vimod {
+    vim -p $(git status -suall | awk '{print $2}')
+}
 
-# Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_OSH_DAYS=13
+# Open files modified in a git commit in vim tabs; defaults to HEAD. Pop it in your .bashrc
+# Examples: 
+#     virev 49808d5
+#     virev HEAD~3
+function virev {
+    commit=$1
+    if [ -z "${commit}" ]; then
+      commit="HEAD"
+    fi
+    rootdir=$(git rev-parse --show-toplevel)
+    sourceFiles=$(git show --name-only --pretty="format:" ${commit} | grep -v '^$')
+    toOpen=""
+    for file in ${sourceFiles}; do
+      file="${rootdir}/${file}"
+      if [ -e "${file}" ]; then
+        toOpen="${toOpen} ${file}"
+      fi
+    done
+    if [ -z "${toOpen}" ]; then
+      echo "No files were modified in ${commit}"
+      return 1
+    fi
+    vim -p ${toOpen}
+}
 
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
+# 'Safe' version of __git_ps1 to avoid errors on systems that don't have it
+function gitPrompt {
+  command -v __git_ps1 > /dev/null && __git_ps1 " (%s)"
+}
 
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+# Colours have names too. Stolen from Arch wiki
+txtblk='\[\e[0;30m\]' # Black - Regular
+txtred='\[\e[0;31m\]' # Red
+txtgrn='\[\e[0;32m\]' # Green
+txtylw='\[\e[0;33m\]' # Yellow
+txtblu='\[\e[0;34m\]' # Blue
+txtpur='\[\e[0;35m\]' # Purple
+txtcyn='\[\e[0;36m\]' # Cyan
+txtwht='\[\e[0;37m\]' # White
+bldblk='\[\e[1;30m\]' # Black - Bold
+bldred='\[\e[1;31m\]' # Red
+bldgrn='\[\e[1;32m\]' # Green
+bldylw='\[\e[1;33m\]' # Yellow
+bldblu='\[\e[1;34m\]' # Blue
+bldpur='\[\e[1;35m\]' # Purple
+bldcyn='\[\e[1;36m\]' # Cyan
+bldwht='\[\e[1;37m\]' # White
+unkblk='\[\e[4;30m\]' # Black - Underline
+undred='\[\e[4;31m\]' # Red
+undgrn='\[\e[4;32m\]' # Green
+undylw='\[\e[4;33m\]' # Yellow
+undblu='\[\e[4;34m\]' # Blue
+undpur='\[\e[4;35m\]' # Purple
+undcyn='\[\e[4;36m\]' # Cyan
+undwht='\[\e[4;37m\]' # White
+bakblk='\[\e[40m\]'   # Black - Background
+bakred='\[\e[41m\]'   # Red
+badgrn='\[\e[42m\]'   # Green
+bakylw='\[\e[43m\]'   # Yellow
+bakblu='\[\e[44m\]'   # Blue
+bakpur='\[\e[45m\]'   # Purple
+bakcyn='\[\e[46m\]'   # Cyan
+bakwht='\[\e[47m\]'   # White
+txtrst='\[\e[0m\]'    # Text Reset
 
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
+# Prompt colours
+atC="${txtpur}"
+nameC="${txtpur}"
+hostC="${txtpur}"
+pathC="${txtgrn}"
+gitC="${txtpur}"
+pointerC="${txtgrn}"
+normalC="${txtwht}"
 
-# Uncomment the following line to display red dots whilst waiting for completion.
-# COMPLETION_WAITING_DOTS="true"
+# Red name for root
+if [ "${UID}" -eq "0" ]; then 
+  nameC="${txtred}" 
+fi
 
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
+# Patent Pending Prompt
+export PS1="${nameC}\u${atC}@${hostC}\h:${pathC}\w${gitC}\$(gitPrompt)${pointerC}▶${normalC} "
 
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Uncomment the following line if you do not want OMB to overwrite the existing
-# aliases by the default OMB aliases defined in lib/*.sh
-# OMB_DEFAULT_ALIASES="check"
-
-# Would you like to use another custom folder than $OSH/custom?
-# OSH_CUSTOM=/path/to/new-custom-folder
-
-# To disable the uses of "sudo" by oh-my-bash, please set "false" to
-# this variable.  The default behavior for the empty value is "true".
-OMB_USE_SUDO=true
-
-# Which completions would you like to load? (completions can be found in ~/.oh-my-bash/completions/*)
-# Custom completions may be added to ~/.oh-my-bash/custom/completions/
-# Example format: completions=(ssh git bundler gem pip pip3)
-# Add wisely, as too many completions slow down shell startup.
-completions=(
-  git
-  composer
-  ssh
-)
-
-# Which aliases would you like to load? (aliases can be found in ~/.oh-my-bash/aliases/*)
-# Custom aliases may be added to ~/.oh-my-bash/custom/aliases/
-# Example format: aliases=(vagrant composer git-avh)
-# Add wisely, as too many aliases slow down shell startup.
-aliases=(
-  general
-)
-
-# Which plugins would you like to load? (plugins can be found in ~/.oh-my-bash/plugins/*)
-# Custom plugins may be added to ~/.oh-my-bash/custom/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(
-  git
-  bashmarks
-)
-
-# Which plugins would you like to conditionally load? (plugins can be found in ~/.oh-my-bash/plugins/*)
-# Custom plugins may be added to ~/.oh-my-bash/custom/plugins/
-# Example format: 
-#  if [ "$DISPLAY" ] || [ "$SSH" ]; then
-#      plugins+=(tmux-autoattach)
-#  fi
-
-source "$OSH"/oh-my-bash.sh
-
-# User configuration
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
-# ssh
-# export SSH_KEY_PATH="~/.ssh/rsa_id"
-
-# Set personal aliases, overriding those provided by oh-my-bash libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-bash
-# users are encouraged to define aliases within the OSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias bashconfig="mate ~/.bashrc"
-# alias ohmybash="mate ~/.oh-my-bash"
+# Local settings go last
+if [ -f ~/.localrc ]; then 
+  source ~/.localrc
+fi
+Footer
